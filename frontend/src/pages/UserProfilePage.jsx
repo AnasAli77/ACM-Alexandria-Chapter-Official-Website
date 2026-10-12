@@ -27,7 +27,8 @@ const UserProfilePage = () => {
     batch: "",
     linkedinUrl: "",
     profileImageUrl: "",
-    role: "USER"
+    role: "USER",
+    seasonPoints: 0,
   });
 
   const [backupProfile, setBackupProfile] = useState(null);
@@ -74,6 +75,10 @@ const UserProfilePage = () => {
           reason: formData.reason,
           points: formData.points
         });
+        setProfile((prev) => ({
+          ...prev,
+          seasonPoints: (prev.seasonPoints || 0) + (formData.points - editingLog.points)
+        }));
       } else {
         await addUserPointsLog({
           member: user.id,
@@ -81,43 +86,51 @@ const UserProfilePage = () => {
           reason: formData.reason,
           points: formData.points
         });
+        setProfile((prev) => ({
+          ...prev,
+          seasonPoints: (prev.seasonPoints || 0) + formData.points
+        }));
       }
 
       handleModalClose();
 
       const data = await fetchUserPointsLogs(user.id, pointsPage);
+
       setPointsLogs(data.content || []);
       setTotalPages(data.totalPages || 0);
 
       setSuccess(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (err) {
       console.error("Failed to save points:", err);
       setError("Failed to save points log. Please try again.");
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handleDeletePointsClick = async (log) => {
     // Show a confirmation popup
     const isConfirmed = window.confirm(`Are you sure you want to delete this log? ("${log.reason}")`);
-    
+
     if (isConfirmed) {
       try {
         await deleteUserPointsLog(log.id); // Call the backend
-        
+        setProfile((prev) => ({
+          ...prev,
+          seasonPoints: (prev.seasonPoints || 0) - log.points
+        }));
         // Refresh the list
         const data = await fetchUserPointsLogs(user.id, pointsPage);
         setPointsLogs(data.content || []);
         setTotalPages(data.totalPages || 0);
-        
+
         setSuccess(true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (err) {
         console.error("Failed to delete points log:", err);
         setError("Failed to delete points log. Please try again.");
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
   };
@@ -142,7 +155,8 @@ const UserProfilePage = () => {
           batch: data.batch || "",
           linkedinUrl: data.linkedin_url || "",
           profileImageUrl: data.profile_image_url || "",
-          role: data.role || user?.role || "USER"
+          role: data.role || user?.role || "USER",
+          seasonPoints: data.season_points ?? 0
         };
         setProfile(profileData);
         setBackupProfile(profileData);
@@ -369,21 +383,39 @@ const UserProfilePage = () => {
         </div>
 
         {/* //////////////////////////////////////////////////////////////////// */}
-        {/* --- POINTS LOG SECTION STARTS HERE --- */}
         {!isEditing && !loading && (
-          <PointsLogSection
-            logs={pointsLogs}
-            isAdmin={isAdmin}
-            page={pointsPage}
-            totalPages={totalPages}
-            onPageChange={(newPage) => setPointsPage(newPage)}
-            onAddClick={handleAddPointsClick}
-            onEditClick={handleEditPointsClick}
-            onDeleteClick={handleDeletePointsClick}
-          />
-        )}
-        {/* --- POINTS LOG SECTION ENDS HERE --- */}
+          <div className="space-y-4">
 
+            {/* 👇 SUCCESS & ERROR ALERTS NOW APPEAR RIGHT HERE 👇 */}
+            <div className="translate-y-[16px]">
+              {success && (
+                <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 rounded-2xl px-5 py-4 animate-[fadeIn_0.4s_ease] shadow-sm">
+                  <HiOutlineCheckCircle className="w-6 h-6 text-emerald-500 shrink-0" />
+                  <p className="font-bold text-sm">Points updated successfully!</p>
+                </div>
+              )}
+
+              {error && (
+                <div className="flex items-center gap-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 rounded-2xl px-5 py-4 animate-[fadeIn_0.4s_ease] shadow-sm">
+                  <HiOutlineExclamationCircle className="w-6 h-6 text-rose-500 shrink-0" />
+                  <p className="font-bold text-sm">{error}</p>
+                </div>
+              )}
+            </div>
+            {/* 👆 END OF ALERTS 👆 */}
+
+            <PointsLogSection
+              logs={pointsLogs}
+              isAdmin={isAdmin}
+              page={pointsPage}
+              totalPages={totalPages}
+              onPageChange={(newPage) => setPointsPage(newPage)}
+              onAddClick={handleAddPointsClick}
+              onEditClick={handleEditPointsClick}
+              onDeleteClick={handleDeletePointsClick}
+            />
+          </div>
+        )}
         {/* 👇 ADD THE MODAL RIGHT HERE 👇 */}
         <PointsLogModal
           isOpen={isModalOpen}
