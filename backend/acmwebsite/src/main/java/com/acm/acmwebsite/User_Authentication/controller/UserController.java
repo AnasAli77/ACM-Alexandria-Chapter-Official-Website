@@ -78,7 +78,7 @@ public class UserController {
   }
 
   @GetMapping("/admin/{id}")
-  @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ACM_HIGH_BOARD', 'ACM_COMMITTEE_BOARD', 'ACM_CLUB_BOARD')")
+  @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ACM_HIGH_BOARD', 'ACM_COMMITTEE_BOARD', 'ACM_CLUB_BOARD', 'ACM_MEMBER')")
   public ResponseEntity<UserProfileDto> adminGetUserProfile(@PathVariable UUID id) {
 
     UserProfileDto profile = userService.getUserProfileById(id);
